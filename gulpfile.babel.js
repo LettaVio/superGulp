@@ -2,12 +2,17 @@ import gulp from "gulp";
 import gpug from "gulp-pug";
 import del from "del";
 import ws from "gulp-webserver";
+import image from "gulp-image";
 
 const routes = {
     pug:{
         watch : "src/**/*.pug",
         src: 'src/*.pug',
         dest: "build",
+    },
+    img:{
+        src: "src/img/*",
+        dest: "build/img",
     }   
 }
 
@@ -18,11 +23,15 @@ const clear = () => del (["build"]);
 
 const webserver = () => gulp.src("build").pipe(ws({livereload: true, open: true}))
 
+const img = () => 
+    gulp.src(routes.img.src).pipe(image()).pipe(gulp.dest(routes.img.dest));
+
 const watch = () => {
     gulp.watch(routes.pug.watch, pug);
+    gulp.watch(routes.img.src, img);
 }
 
-const prepare = gulp.series([clear]);
+const prepare = gulp.series([clear, img]);
 const assets = gulp.series([pug]);
 const postDev = gulp.parallel([webserver, watch]);
 
