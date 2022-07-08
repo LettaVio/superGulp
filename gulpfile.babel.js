@@ -3,10 +3,14 @@ import gpug from "gulp-pug";
 import del from "del";
 import ws from "gulp-webserver";
 import image from "gulp-image";
-import dartSass from 'sass';
-import gulpSass from 'gulp-sass';
-import autoprefixer from 'gulp-autoprefixer';
+import dartSass from "sass";
+import gulpSass from "gulp-sass";
+import autoprefixer from "gulp-autoprefixer";
 import miniCSS from "gulp-csso";
+import bro from "gulp-bro";
+import babelify from "babelify";
+import ghPages from "gulp-gh-pages";
+
 
 const sass = gulpSass(dartSass);
 
@@ -26,6 +30,11 @@ const routes = {
         src: "src/scss/style.scss",
         dest: "build/css/",
     }, 
+    js: {
+        watch: 'src/js/**/*.js',
+        src: "src/js/main.js",
+        dest: "build/js/"
+    }
 };
 
 const pug = () =>
@@ -47,15 +56,31 @@ const styles = () =>
     .pipe(miniCSS())
     .pipe(gulp.dest(routes.scss.dest));
 
+const js = () =>  
+    gulp.src(routes.js.src)
+    .pipe(bro({
+    transform: [babelify.configure({ presets: ['@babel/preset-env'] })]
+    }))
+    .pipe(gulp.dest(routes.js.dest))
+
+const ghDeploy = () => gulp.src("build/**/*").pipe(ghPages({
+    remoteUrl: "https://github.com/LettaVio/superGulp.git",
+})
+);
+
 const watch = () => {
     gulp.watch(routes.pug.watch, pug);
     gulp.watch(routes.img.src, img);
     gulp.watch(routes.scss.watch, styles);
+    gulp.watch(routes.js.watch, js);
 }
 
 const prepare = gulp.series([clear, img]);
-const assets = gulp.series([pug, styles]);
-const postDev = gulp.parallel([webserver, watch]);
+const assets = gulp.series([pug, styles, js]);
+const live = gulp.parallel([webserver, watch]);
 
-export const dev = gulp.series([prepare, assets, postDev]);
+export const build = gulp.series([prepare, assets]);
+export const dev = gulp.series([build, live]);
+export const deploy  = gulp.series([build, ghDeploy]);
+
 
